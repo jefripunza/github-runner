@@ -11,6 +11,8 @@ if [ -z "$RUNNER_TOKEN" ]; then
   exit 1
 fi
 
+rm -f /var/run/docker.pid
+
 echo "Starting Docker daemon..."
 dockerd &
 DOCKERD_PID=$!
