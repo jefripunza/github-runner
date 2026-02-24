@@ -13,6 +13,7 @@ RUN apt update && apt install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m runner
+
 WORKDIR /home/runner
 
 RUN curl -o actions-runner-linux-x64.tar.gz -L \
@@ -20,11 +21,11 @@ RUN curl -o actions-runner-linux-x64.tar.gz -L \
 
 RUN tar xzf ./actions-runner-linux-x64.tar.gz
 
-RUN chown -R runner:runner /home/runner
+# ⬇️ Copy file dengan ownership langsung benar
+COPY --chown=runner:runner start.sh /home/runner/start.sh
+
+RUN chmod +x /home/runner/start.sh
 
 USER runner
 
-COPY start.sh .
-RUN chmod +x start.sh
-
-ENTRYPOINT ["./start.sh"]
+ENTRYPOINT ["/home/runner/start.sh"]
