@@ -30,7 +30,7 @@ until docker info >/dev/null 2>&1; do
 done
 echo "Docker daemon is ready."
 
-su-exec runner ./config.sh \
+gosu runner ./config.sh \
   --url $REPO_URL \
   --token $RUNNER_TOKEN \
   --name docker-runner \
@@ -40,14 +40,14 @@ su-exec runner ./config.sh \
 
 cleanup() {
   echo "Removing runner..."
-  su-exec runner ./config.sh remove --unattended --token $RUNNER_TOKEN
+  gosu runner ./config.sh remove --unattended --token $RUNNER_TOKEN
   kill $DOCKERD_PID 2>/dev/null || true
 }
 
 trap 'cleanup; exit 130' INT
 trap 'cleanup; exit 143' TERM
 
-su-exec runner ./run.sh &
+gosu runner ./run.sh &
 RUNNER_PID=$!
 
 wait $RUNNER_PID
