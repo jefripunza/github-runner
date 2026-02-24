@@ -1,37 +1,35 @@
-FROM ubuntu:22.04
+FROM docker:dind
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV RUNNER_VERSION=2.314.1
+ENV RUNNER_VERSION=2.331.0
 
-RUN apt update && apt install -y \
+RUN apk add --no-cache \
+    bash \
     curl \
-    jq \
     git \
-    build-essential \
-    ca-certificates \
+    jq \
     sudo \
-    docker.io \
-    gosu \
-    libicu70 \
-    libssl3 \
-    zlib1g \
-    libgcc-s1 \
-    libstdc++6 \
-    && rm -rf /var/lib/apt/lists/*
+    shadow \
+    icu-libs \
+    openssl \
+    zlib \
+    gcc \
+    musl-dev \
+    libstdc++
 
-RUN useradd -m runner
+RUN adduser -D -h /home/runner runner \
+    && addgroup runner docker
 
 WORKDIR /home/runner
 
 RUN curl -o actions-runner-linux-x64.tar.gz -L \
-    https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz
-
-RUN tar xzf actions-runner-linux-x64.tar.gz \
-    && rm actions-runner-linux-x64.tar.gz
+    https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz \
+    && tar xzf actions-runner-linux-x64.tar.gz \
+    && rm actions-runner-linux-x64.tar.gz \
+    && chown -R runner:runner /home/runner
 
 COPY --chown=runner:runner start.sh /home/runner/start.sh
 RUN chmod +x /home/runner/start.sh
 
-USER root
+VOLUME /var/lib/docker
 
 ENTRYPOINT ["/home/runner/start.sh"]

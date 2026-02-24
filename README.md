@@ -1,19 +1,21 @@
 # github-runner
 
+Docker image untuk menjalankan **GitHub Actions self-hosted runner** dengan **Docker-in-Docker (DinD)**.
 
-Docker image untuk menjalankan **GitHub Actions self-hosted runner** di dalam container.
+Runner ini bisa menjalankan workflow yang membutuhkan `docker build`, `docker push`, dan `docker compose` langsung di dalam container — tanpa perlu mount Docker socket dari host.
 
 Image ini akan:
 
-- **Register runner** ke repository yang kamu tentukan saat container start
+- **Start Docker daemon** (`dockerd`) di dalam container
+- **Register runner** ke repository yang kamu tentukan
 - Menjalankan runner (`run.sh`)
-- **Auto-cleanup** (remove runner) saat container dihentikan (SIGTERM/SIGINT)
+- **Auto-cleanup** (remove runner + stop `dockerd`) saat container dihentikan (SIGTERM/SIGINT)
 
 ## Quick start
 
 1. Buat **runner token** dari GitHub:
 
-- Repo: `Settings` -> `Actions` -> `Runners` -> `New self-hosted runner`
+- Repo: `Settings` → `Actions` → `Runners` → `New self-hosted runner`
 - Ambil token di langkah konfigurasi runner
 
 2. Jalankan container:
@@ -21,11 +23,13 @@ Image ini akan:
 ```bash
 docker run -d \
   --name github-runner \
-  -v /var/run/docker.sock:/var/run/docker.sock \
+  --privileged \
   -e REPO_URL=https://github.com/username/repo \
   -e RUNNER_TOKEN=YOUR_TOKEN \
   jefriherditriyanto/github-runner:latest
 ```
+
+> **`--privileged` wajib** agar `dockerd` bisa berjalan di dalam container.
 
 3. Cek log:
 
@@ -44,10 +48,12 @@ Wajib:
 
 ## Notes
 
+- **Base image**: `docker:dind` (Alpine-based)
 - **Runner name** di-set ke `docker-runner`.
-  Jika kamu menjalankan lebih dari 1 container runner untuk repo yang sama, nama ini akan bentrok. (Saat ini belum ada env var untuk mengubah nama.)
+  Jika kamu menjalankan lebih dari 1 container runner untuk repo yang sama, nama ini akan bentrok.
 - **Work directory**: `_work`.
-- Container berjalan sebagai user non-root `runner`.
+- GitHub Actions runner berjalan sebagai user non-root `runner`, sedangkan `dockerd` berjalan sebagai root.
+- Docker data disimpan di volume `/var/lib/docker` (otomatis di-manage Docker).
 
 ## Examples
 
@@ -56,6 +62,7 @@ Wajib:
 ```bash
 docker run -d \
   --name github-runner \
+  --privileged \
   -e REPO_URL=https://github.com/username/repo \
   -e RUNNER_TOKEN=YOUR_TOKEN \
   jefriherditriyanto/github-runner:<tag>
@@ -69,8 +76,7 @@ services:
     image: jefriherditriyanto/github-runner:latest
     container_name: github-runner
     restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+    privileged: true
     environment:
       REPO_URL: https://github.com/username/repo
       RUNNER_TOKEN: YOUR_TOKEN
@@ -81,13 +87,18 @@ services:
 - **Jangan hardcode** `RUNNER_TOKEN` di repository publik.
 - Gunakan secret manager / environment injection dari platform kamu.
 - Token runner dari GitHub biasanya **expired dalam waktu singkat**. Jika container restart setelah token expired, runner tidak bisa register.
-- Mounting `/var/run/docker.sock` memberi container akses setara root ke Docker host. Jalankan image ini hanya di host yang kamu percayai.
+- **`--privileged`** memberi container akses penuh ke kernel host. Jalankan image ini hanya di host yang kamu percayai.
 
 ## Troubleshooting
 
 ### `REPO_URL not set` / `RUNNER_TOKEN not set`
 
 - Pastikan env var `REPO_URL` dan `RUNNER_TOKEN` sudah di-set.
+
+### `Docker daemon failed to start after 30s`
+
+- Pastikan container dijalankan dengan `--privileged`.
+- Cek log: `docker logs github-runner`.
 
 ### Runner tidak muncul di GitHub
 
