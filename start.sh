@@ -3,10 +3,27 @@ set -e
 
 if [ -S "/var/run/docker.sock" ]; then
   DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)
-  if ! getent group "$DOCKER_GID" >/dev/null 2>&1; then
-    groupadd -g "$DOCKER_GID" docker
+  DOCKER_GROUP_NAME=""
+
+  if getent group docker >/dev/null 2>&1; then
+    EXISTING_DOCKER_GID=$(getent group docker | cut -d: -f3)
+    if [ "$EXISTING_DOCKER_GID" = "$DOCKER_GID" ]; then
+      DOCKER_GROUP_NAME="docker"
+    fi
   fi
-  usermod -aG "$DOCKER_GID" runner
+
+  if [ -z "$DOCKER_GROUP_NAME" ] && getent group "$DOCKER_GID" >/dev/null 2>&1; then
+    DOCKER_GROUP_NAME=$(getent group "$DOCKER_GID" | head -n1 | cut -d: -f1)
+  fi
+
+  if [ -z "$DOCKER_GROUP_NAME" ]; then
+    DOCKER_GROUP_NAME="docker-host"
+    if ! getent group "$DOCKER_GROUP_NAME" >/dev/null 2>&1; then
+      groupadd -g "$DOCKER_GID" "$DOCKER_GROUP_NAME"
+    fi
+  fi
+
+  usermod -aG "$DOCKER_GROUP_NAME" runner
 fi
 
 if [ -z "$REPO_URL" ]; then
