@@ -36,7 +36,7 @@ if [ -z "$RUNNER_TOKEN" ]; then
   exit 1
 fi
 
-./config.sh \
+gosu runner:runner ./config.sh \
   --url $REPO_URL \
   --token $RUNNER_TOKEN \
   --name docker-runner \
@@ -46,7 +46,7 @@ fi
 
 cleanup() {
   echo "Removing runner..."
-  ./config.sh remove --unattended --token $RUNNER_TOKEN
+  gosu runner:runner ./config.sh remove --unattended --token $RUNNER_TOKEN
 }
 
 trap 'cleanup; exit 130' INT
