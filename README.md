@@ -21,6 +21,7 @@ Image ini akan:
 ```bash
 docker run -d \
   --name github-runner \
+  -v /var/run/docker.sock:/var/run/docker.sock \
   -e REPO_URL=https://github.com/username/repo \
   -e RUNNER_TOKEN=YOUR_TOKEN \
   jefriherditriyanto/github-runner:latest
@@ -68,6 +69,8 @@ services:
     image: jefriherditriyanto/github-runner:latest
     container_name: github-runner
     restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       REPO_URL: https://github.com/username/repo
       RUNNER_TOKEN: YOUR_TOKEN
@@ -78,6 +81,7 @@ services:
 - **Jangan hardcode** `RUNNER_TOKEN` di repository publik.
 - Gunakan secret manager / environment injection dari platform kamu.
 - Token runner dari GitHub biasanya **expired dalam waktu singkat**. Jika container restart setelah token expired, runner tidak bisa register.
+- Mounting `/var/run/docker.sock` memberi container akses setara root ke Docker host. Jalankan image ini hanya di host yang kamu percayai.
 
 ## Troubleshooting
 

@@ -10,6 +10,8 @@ RUN apt update && apt install -y \
     build-essential \
     ca-certificates \
     sudo \
+    docker.io \
+    gosu \
     libicu70 \
     libssl3 \
     zlib1g \
@@ -30,6 +32,6 @@ RUN tar xzf actions-runner-linux-x64.tar.gz \
 COPY --chown=runner:runner start.sh /home/runner/start.sh
 RUN chmod +x /home/runner/start.sh
 
-USER runner
+USER root
 
 ENTRYPOINT ["/home/runner/start.sh"]
